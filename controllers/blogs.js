@@ -3,30 +3,35 @@ const { Blog } = require('../models')
 const { User } = require('../models')
 const jwt = require('jsonwebtoken')
 const { SECRET } = require('../util/config')
-
-const tokenExtractor = (req, res, next) => {
-  const authorization = req.get('authorization')
-  if (authorization && authorization.toLowerCase().startsWith('bearer ')) {
-    try {
-      console.log(authorization.substring(7))
-      req.decodedToken = jwt.verify(authorization.substring(7), SECRET)
-    } catch (error) {
-      console.log(error)
-      return res.status(401).json({ error: 'token invalid' })
-    }
-  } else {
-    return res.status(401).json({ error: 'token missing' })
-  }
-  next()
-}
+const { tokenExtractor, blogFinder } = require('../util/controllers')
+const { Op } = require('sequelize')
 
 router.get('/', async (req, res) => {
+  let where = {}
+  if (req.query.search) {
+    where = {
+          [Op.or]: [
+            {
+              title: {
+                [Op.substring]: req.query.search.toLowerCase(),
+              }
+            },
+            {
+              author: {
+                [Op.substring]: req.query.search.toLowerCase(),
+              }
+            }
+          ]
+        }
+  }
+
   const blogs = await Blog.findAll({
-    attributes: { exclude: ['userId']},
+    attributes: { exclude: ['userId'] },
     include: {
-        model: User,
-        attributes: ['name']
-    }
+      model: User,
+      attributes: ['name'],
+    },
+    where
   })
   res.json(blogs)
 })
@@ -37,20 +42,15 @@ router.post('/', tokenExtractor, async (req, res) => {
   res.status(201).json(blog)
 })
 
-const blogFinder = async (req, res, next) => {
-  req.blog = await Blog.findByPk(req.params.id)
-  next()
-}
-
 router.delete('/:id', blogFinder, tokenExtractor, async (req, res) => {
-    const user = await User.findByPk(req.decodedToken.id)
+  const user = await User.findByPk(req.decodedToken.id)
   if (req.blog) {
     if (req.blog.userId === user.id) {
-        await req.blog.destroy()
-        res.status(204).end()
+      await req.blog.destroy()
+      res.status(204).end()
     } else {
-        return res.status(401).json({ error: 'Only creator can remove blogs' })
-      }
+      return res.status(401).json({ error: 'Only creator can remove blogs' })
+    }
   } else {
     return res.status(401).json({ error: 'Blog does not exist' })
   }
