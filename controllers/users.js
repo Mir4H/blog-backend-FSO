@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt')
 const router = require('express').Router()
 const { User, UserReadings, Blog } = require('../models')
+const { tokenExtractor, checkToken } = require('../util/controllers')
 
 router.get('/', async (req, res) => {
   const users = await User.findAll({
@@ -30,12 +31,16 @@ router.post('/', async (req, res) => {
   }
 })
 
-router.put('/:username', async (req, res) => {
+router.put('/:username', tokenExtractor, checkToken, async (req, res) => {
   const user = await User.findOne({ where: { username: req.params.username } })
   if (user) {
-    user.username = req.body.username
-    await user.save()
-    res.json(user)
+    if (user.id === req.decodedToken.id) {
+        user.username = req.body.username
+        await user.save()
+        res.json(user)
+    } else {
+        return res.status(401).json({ error: 'Only own account can be modified' })
+      }
   } else {
     res.status(404).end()
   }

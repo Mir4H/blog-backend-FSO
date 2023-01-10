@@ -3,7 +3,7 @@ const { Blog } = require('../models')
 const { User } = require('../models')
 const jwt = require('jsonwebtoken')
 const { SECRET } = require('../util/config')
-const { tokenExtractor, blogFinder } = require('../util/controllers')
+const { tokenExtractor, blogFinder, checkToken } = require('../util/controllers')
 const { Op } = require('sequelize')
 
 router.get('/', async (req, res) => {
@@ -24,7 +24,6 @@ router.get('/', async (req, res) => {
       ],
     }
   }
-
   const blogs = await Blog.findAll({
     attributes: { exclude: ['userId'] },
     include: {
@@ -37,13 +36,13 @@ router.get('/', async (req, res) => {
   res.json(blogs)
 })
 
-router.post('/', tokenExtractor, async (req, res) => {
+router.post('/', tokenExtractor, checkToken, async (req, res) => {
   const user = await User.findByPk(req.decodedToken.id)
   const blog = await Blog.create({ ...req.body, userId: user.id })
   res.status(201).json(blog)
 })
 
-router.delete('/:id', blogFinder, tokenExtractor, async (req, res) => {
+router.delete('/:id', blogFinder, tokenExtractor, checkToken, async (req, res) => {
   const user = await User.findByPk(req.decodedToken.id)
   if (req.blog) {
     if (req.blog.userId === user.id) {
