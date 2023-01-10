@@ -10,19 +10,19 @@ router.get('/', async (req, res) => {
   let where = {}
   if (req.query.search) {
     where = {
-          [Op.or]: [
-            {
-              title: {
-                [Op.substring]: req.query.search.toLowerCase(),
-              }
-            },
-            {
-              author: {
-                [Op.substring]: req.query.search.toLowerCase(),
-              }
-            }
-          ]
-        }
+      [Op.or]: [
+        {
+          title: {
+            [Op.substring]: req.query.search.toLowerCase(),
+          },
+        },
+        {
+          author: {
+            [Op.substring]: req.query.search.toLowerCase(),
+          },
+        },
+      ],
+    }
   }
 
   const blogs = await Blog.findAll({
@@ -32,8 +32,7 @@ router.get('/', async (req, res) => {
       attributes: ['name'],
     },
     where,
-    order: [
-        ['likes', 'DESC']]
+    order: [['likes', 'DESC']],
   })
   res.json(blogs)
 })
