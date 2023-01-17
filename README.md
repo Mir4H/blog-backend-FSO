@@ -1,3 +1,4 @@
-# blog-backend-FSO
-Node/ PostgreSQL blog backend - Full Stack Open exercise
+# Blog review app Backend
+Node.js / PostgreSQL backend for listing blogs
+Full Stack Open exercise | https://fullstackopen.com/en/part13
 
